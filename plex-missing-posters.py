@@ -54,7 +54,7 @@ if (len(tvSearch) > 0):
             except:
                 print(bcolors.FAIL + "Couldn't match: " + unmatched.title + bcolors.ENDC)
                 f.write("\nUnmatched content: " + unmatched.title)
-                bar()
+            bar()
 
 print("Finding missing posters in " + library + " ...")
 tvSearch = tv.search(unmatched=False)
