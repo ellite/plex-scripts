@@ -83,7 +83,7 @@ with alive_bar(len(tvSearch), enrich_print=False) as bar:
         bar()
 
 end = datetime.now()
-f.write("\nEmded: " + end.strftime("%H:%M:%S"))
+f.write("\nEnded: " + end.strftime("%H:%M:%S"))
 print("Total misisng posters: ", missing)
 f.write("\nTotal missing posters: " + str(missing))
 print("Total valid posters: ", valid)
