@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+
+"""
+plexmissinglang: Find Plex library items with undefined audio language.
+
+This script connects to your Plex Media Server and scans either your Movies or TV Shows library
+to find items (movies or episodes) that have no audio language set. It can be run interactively
+or from the command line (for automation/cron jobs).
+
+Features:
+- Works for both Movies and TV Shows libraries (library names are configurable).
+- Can be run interactively (prompts for library) or non-interactively (pass 'tv' or 'movies' as argument).
+- Sends a webhook notification with the count of items found (webhook IDs are configurable for each library).
+- Prints a list of all items with undefined audio language.
+
+Usage:
+    python3 plexmissinglang
+    # Interactive mode: prompts for library
+
+    python3 plexmissinglang tv
+    # Non-interactive: scans TV library
+
+    python3 plexmissinglang movies
+    # Non-interactive: scans Movies library
+
+Requirements:
+    - plexapi (pip install plexapi)
+    - requests (pip install requests)
+    - Plex Media Server with accessible API
+
+Configuration:
+    Edit the variables at the top of the script to match your Plex server IP, port, token,
+    and your Movies/TV library names and webhook URLs/IDs.
+"""
+
+import plexapi
+from plexapi.server import PlexServer
+import requests
+import sys
+
+# ---- CONFIGURATION ----
+PLEX_IP = "<YOUR PLEX SERVER IP>"
+PLEX_PORT = 32400
+PLEX_TOKEN = "<YOUR_PLEX_TOKEN>"
+MOVIES_LIBRARY = "Movies"
+TV_LIBRARY = "TV Shows"
+
+WEBHOOK_URL = "<YOUR WEBHOOK URL>"
+WEBHOOK_ID_TV = "tv-missing-lang"
+WEBHOOK_ID_MOVIES = "movies-missing-lang"
+# -----------------------
+
+def main():
+    baseurl = f"http://{PLEX_IP}:{PLEX_PORT}"
+    plex = PlexServer(baseurl, PLEX_TOKEN)
+
+    # Allow selection via command line argument for automation/cron
+    if len(sys.argv) > 1:
+        arg = sys.argv[1].lower()
+        if arg in ["tv", "tvshows", "shows"]:
+            library_name = TV_LIBRARY
+            webhook_id = WEBHOOK_ID_TV
+        elif arg in ["movies", "movie"]:
+            library_name = MOVIES_LIBRARY
+            webhook_id = WEBHOOK_ID_MOVIES
+        else:
+            print("Usage: plexmissinglang [tv|movies]")
+            sys.exit(1)
+    else:
+        # Interactive prompt if no argument is given
+        print("Which library do you want to scan?")
+        print(f"1) {TV_LIBRARY}")
+        print(f"2) {MOVIES_LIBRARY}")
+        choice = input("Enter 1 or 2: ").strip()
+        if choice == "1":
+            library_name = TV_LIBRARY
+            webhook_id = WEBHOOK_ID_TV
+        elif choice == "2":
+            library_name = MOVIES_LIBRARY
+            webhook_id = WEBHOOK_ID_MOVIES
+        else:
+            print("Invalid choice.")
+            return
+
+    section = plex.library.section(library_name)
+    items = section.search(audioLanguage="")
+
+    print(f"\n{len(items)} items in '{library_name}' have undefined audio language:\n")
+    for item in items:
+        print(item.title)
+
+    try:
+        requests.post(WEBHOOK_URL + webhook_id, json={"log": len(items)})
+    except Exception as e:
+        print(f"Webhook failed: {e}")
+
+if __name__ == "__main__":
+    main()
